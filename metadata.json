@@ -1,0 +1,8 @@
+{
+  "name": "ROI-AI - Enterprise AI Consulting",
+  "description": "A production-grade agency website for ROI-AI, specializing in high-ticket AI automation and consulting with a focus on measurable ROI and operational leverage.",
+  "requestFramePermissions": [
+    "camera",
+    "microphone"
+  ]
+}
