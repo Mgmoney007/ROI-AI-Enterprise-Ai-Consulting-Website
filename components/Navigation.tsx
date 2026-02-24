@@ -5,16 +5,33 @@ import { Menu, X, ChevronRight } from 'lucide-react';
 
 const Navigation: React.FC = () => {
   const [isScrolled, setIsScrolled] = useState(false);
+  const [isVisible, setIsVisible] = useState(true);
+  const [lastScrollY, setLastScrollY] = useState(0);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const location = useLocation();
 
   useEffect(() => {
     const handleScroll = () => {
-      setIsScrolled(window.scrollY > 20);
+      const currentScrollY = window.scrollY;
+      
+      if (currentScrollY > 100) {
+        setIsScrolled(true);
+        if (currentScrollY > lastScrollY && currentScrollY > 300) {
+          setIsVisible(false);
+        } else {
+          setIsVisible(true);
+        }
+      } else {
+        setIsScrolled(false);
+        setIsVisible(true);
+      }
+      
+      setLastScrollY(currentScrollY);
     };
-    window.addEventListener('scroll', handleScroll);
+
+    window.addEventListener('scroll', handleScroll, { passive: true });
     return () => window.removeEventListener('scroll', handleScroll);
-  }, []);
+  }, [lastScrollY]);
 
   // Close mobile menu when route changes
   useEffect(() => {
@@ -66,11 +83,10 @@ const Navigation: React.FC = () => {
 
   const navLinks = [
     { label: 'Services', to: '/services' },
+    { label: 'AI Strategy', to: '/services#strategy' },
+    { label: 'Automation', to: '/services#automation' },
     { label: 'Case Studies', to: '/case-studies' },
-    { label: 'Process', to: '/#process-1' },
-    { label: 'FAQ', to: '/#faq-1' },
     { label: 'About', to: '/about' },
-    { label: 'Resources', to: '/blog' },
   ];
 
   const isActive = (to: string) => {
@@ -78,7 +94,7 @@ const Navigation: React.FC = () => {
   };
 
   return (
-    <nav className={`fixed top-0 left-0 right-0 z-50 transition-all duration-500 ${isScrolled ? 'bg-[#030303]/90 backdrop-blur-xl py-3 border-b border-white/5' : 'bg-transparent py-6'}`}>
+    <nav className={`fixed top-0 left-0 right-0 z-50 transition-all duration-500 ${isVisible ? 'translate-y-0' : '-translate-y-full'} ${isScrolled ? 'bg-[#030303]/90 backdrop-blur-xl py-3 border-b border-white/5' : 'bg-transparent py-6'}`}>
       <div className="max-w-7xl mx-auto px-6 flex items-center justify-between">
         <Link to="/" className="flex items-center gap-2 group relative z-[70]">
           <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-blue-600 to-emerald-500 flex items-center justify-center font-bold text-sm shadow-lg shadow-blue-500/20 group-hover:scale-110 transition-transform">R</div>
@@ -103,7 +119,7 @@ const Navigation: React.FC = () => {
             to="/book" 
             className="px-6 py-2.5 bg-gradient-to-r from-blue-600 to-emerald-600 text-white text-sm font-black rounded-full hover:scale-105 active:scale-95 transition-all shadow-lg shadow-blue-500/20"
           >
-            Consultation
+            Contact Us
           </Link>
         </div>
 

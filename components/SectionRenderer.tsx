@@ -1,13 +1,71 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import { Section, SectionType } from '../types';
 import { Zap, Target, Layers, ArrowRight, CheckCircle2, Linkedin, Twitter, Quote, Shield } from 'lucide-react';
-import { motion } from 'motion/react';
+import { motion, useInView } from 'motion/react';
 
 interface Props {
   section: Section;
 }
+
+const AnimatedCounter = ({ value }: { value: string }) => {
+  const ref = useRef(null);
+  const isInView = useInView(ref, { once: true, margin: "-50px" });
+  const [count, setCount] = useState("1");
+
+  useEffect(() => {
+    if (!isInView) return;
+
+    const match = value.match(/^([^0-9]*)([0-9.,]+)([^0-9]*)$/);
+    if (!match) {
+      setCount(value);
+      return;
+    }
+
+    const prefix = match[1];
+    const numStr = match[2].replace(/,/g, '');
+    const suffix = match[3];
+    const targetNum = parseFloat(numStr);
+
+    if (isNaN(targetNum)) {
+      setCount(value);
+      return;
+    }
+
+    const duration = 2000;
+    const fps = 60;
+    const totalFrames = Math.round((duration / 1000) * fps);
+    let frame = 0;
+
+    const counter = setInterval(() => {
+      frame++;
+      const progress = frame / totalFrames;
+      const easeProgress = progress === 1 ? 1 : 1 - Math.pow(2, -10 * progress);
+      
+      const currentNum = 1 + (targetNum - 1) * easeProgress;
+      
+      let formattedNum;
+      if (numStr.includes('.')) {
+        const decimals = numStr.split('.')[1].length;
+        formattedNum = currentNum.toFixed(decimals);
+      } else {
+        formattedNum = Math.round(currentNum).toLocaleString();
+      }
+
+      setCount(`${prefix}${formattedNum}${suffix}`);
+
+      if (frame === totalFrames) {
+        clearInterval(counter);
+        setCount(value);
+      }
+    }, 1000 / fps);
+
+    return () => clearInterval(counter);
+  }, [isInView, value]);
+
+  return <span ref={ref}>{count}</span>;
+};
 
 const BenefitCard = ({ icon: Icon, title, description, label }: { icon: any, title: string, description: string, label: string }) => {
   const [isPressed, setIsPressed] = useState(false);
@@ -53,15 +111,25 @@ const SectionRenderer: React.FC<Props> = ({ section }) => {
     case SectionType.Hero:
       const isMission = section.content?.isMission;
       const ctaLink = section.cta?.href?.startsWith('#/') ? section.cta.href.substring(1) : section.cta?.href;
+      const [scrollY, setScrollY] = useState(0);
+
+      useEffect(() => {
+        const handleScroll = () => {
+          setScrollY(window.scrollY);
+        };
+        window.addEventListener('scroll', handleScroll, { passive: true });
+        return () => window.removeEventListener('scroll', handleScroll);
+      }, []);
       
       return (
         <section id={section.id} className="relative pt-48 pb-32 px-6 overflow-hidden min-h-[70vh] flex items-center justify-center">
           {/* Hero Background Image for Mission States */}
           {isMission && section.content?.image && (
-            <div className="absolute inset-0 z-0">
+            <div className="absolute inset-0 z-0 overflow-hidden">
                <img 
                  src={`${section.content.image}&w=1920&q=60&auto=format&fit=crop`} 
-                 className="w-full h-full object-cover opacity-20 scale-110" 
+                 className="w-full h-[120%] object-cover opacity-20" 
+                 style={{ transform: `translateY(${scrollY * 0.3 - 50}px)` }}
                  alt="Mission Background" 
                  referrerPolicy="no-referrer"
                />
@@ -205,13 +273,22 @@ const SectionRenderer: React.FC<Props> = ({ section }) => {
 
     case SectionType.TrustStrip:
       return (
-        <section id={section.id} className="py-12 border-y border-white/5 bg-white/[0.01]">
+        <section id={section.id} className="py-12 border-y border-white/5 bg-white/[0.01] overflow-hidden">
           <div className="max-w-7xl mx-auto px-6 grid grid-cols-2 md:grid-cols-4 gap-8">
             {section.content?.map((item: any, i: number) => (
-              <div key={i} className="text-center group">
-                <div className="text-3xl font-black text-white mb-1 group-hover:text-emerald-400 transition-colors">{item.value}</div>
+              <motion.div 
+                key={i} 
+                initial={{ opacity: 0, y: -30 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true, margin: "-50px" }}
+                transition={{ duration: 0.6, delay: i * 0.15, ease: "easeOut" }}
+                className="text-center group"
+              >
+                <div className="text-3xl font-black text-white mb-1 group-hover:text-emerald-400 transition-colors">
+                  <AnimatedCounter value={item.value} />
+                </div>
                 <div className="text-[10px] uppercase tracking-widest text-gray-500 font-bold">{item.label}</div>
-              </div>
+              </motion.div>
             ))}
           </div>
         </section>
